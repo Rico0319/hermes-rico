@@ -1,180 +1,253 @@
-<p align="center">
-  <img src="assets/banner.png" alt="Hermes Agent" width="100%">
-</p>
+# Rico's Hermes Fork — Curated Stable Mirror
 
-# Hermes Agent ☤
-
-<p align="center">
-  <a href="https://hermes-agent.nousresearch.com/docs/"><img src="https://img.shields.io/badge/Docs-hermes--agent.nousresearch.com-FFD700?style=for-the-badge" alt="Documentation"></a>
-  <a href="https://discord.gg/NousResearch"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
-  <a href="https://github.com/NousResearch/hermes-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
-  <a href="https://nousresearch.com"><img src="https://img.shields.io/badge/Built%20by-Nous%20Research-blueviolet?style=for-the-badge" alt="Built by Nous Research"></a>
-</p>
-
-**The self-improving AI agent built by [Nous Research](https://nousresearch.com).** It's the only agent with a built-in learning loop — it creates skills from experience, improves them during use, nudges itself to persist knowledge, searches its own past conversations, and builds a deepening model of who you are across sessions. Run it on a $5 VPS, a GPU cluster, or serverless infrastructure that costs nearly nothing when idle. It's not tied to your laptop — talk to it from Telegram while it works on a cloud VM.
-
-Use any model you want — [Nous Portal](https://portal.nousresearch.com), [OpenRouter](https://openrouter.ai) (200+ models), [NVIDIA NIM](https://build.nvidia.com) (Nemotron), [Xiaomi MiMo](https://platform.xiaomimimo.com), [z.ai/GLM](https://z.ai), [Kimi/Moonshot](https://platform.moonshot.ai), [MiniMax](https://www.minimax.io), [Hugging Face](https://huggingface.co), OpenAI, or your own endpoint. Switch with `hermes model` — no code changes, no lock-in.
-
-<table>
-<tr><td><b>A real terminal interface</b></td><td>Full TUI with multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output.</td></tr>
-<tr><td><b>Lives where you do</b></td><td>Telegram, Discord, Slack, WhatsApp, Signal, and CLI — all from a single gateway process. Voice memo transcription, cross-platform conversation continuity.</td></tr>
-<tr><td><b>A closed learning loop</b></td><td>Agent-curated memory with periodic nudges. Autonomous skill creation after complex tasks. Skills self-improve during use. FTS5 session search with LLM summarization for cross-session recall. <a href="https://github.com/plastic-labs/honcho">Honcho</a> dialectic user modeling. Compatible with the <a href="https://agentskills.io">agentskills.io</a> open standard.</td></tr>
-<tr><td><b>Scheduled automations</b></td><td>Built-in cron scheduler with delivery to any platform. Daily reports, nightly backups, weekly audits — all in natural language, running unattended.</td></tr>
-<tr><td><b>Delegates and parallelizes</b></td><td>Spawn isolated subagents for parallel workstreams. Write Python scripts that call tools via RPC, collapsing multi-step pipelines into zero-context-cost turns.</td></tr>
-<tr><td><b>Runs anywhere, not just your laptop</b></td><td>Six terminal backends — local, Docker, SSH, Daytona, Singularity, and Modal. Daytona and Modal offer serverless persistence — your agent's environment hibernates when idle and wakes on demand, costing nearly nothing between sessions. Run it on a $5 VPS or a GPU cluster.</td></tr>
-<tr><td><b>Research-ready</b></td><td>Batch trajectory generation, Atropos RL environments, trajectory compression for training the next generation of tool-calling models.</td></tr>
-</table>
+**Fork of:** [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent)  
+**Owner:** Rico (Fengzhuoyang) Zhu — `RicoZhu@ricozhu.com`  
+**Purpose:** A stable, company-curated distribution of Hermes Agent for internal deployment.
 
 ---
 
-## Quick Install
+## What This Fork Is
+
+This repository is a **curated, stable buffer** between the fast-moving upstream Hermes Agent project and your internal users. The upstream repository receives frequent updates — some stable, some experimental. This fork ensures that **only changes you have personally reviewed and approved** reach your users.
+
+### Key Principle
+
+> Your users run `hermes update` and receive changes from **this fork only**. They never pull directly from the upstream repository. You are the gatekeeper.
+
+---
+
+## Repository Setup
+
+### Remotes
+
+| Remote | URL | Purpose |
+|--------|-----|---------|
+| `origin` | `git@github.com:Rico0319/hermes-rico.git` | Your fork — what users install from |
+| `upstream` | `https://github.com/NousResearch/hermes-agent.git` | Original repo — you review from here |
+
+### One-Liner Install (for your users)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/install.sh | bash
 ```
 
-Works on Linux, macOS, WSL2, and Android via Termux. The installer handles the platform-specific setup for you.
-
-> **Android / Termux:** The tested manual path is documented in the [Termux guide](https://hermes-agent.nousresearch.com/docs/getting-started/termux). On Termux, Hermes installs a curated `.[termux]` extra because the full `.[all]` extra currently pulls Android-incompatible voice dependencies.
->
-> **Windows:** Native Windows is not supported. Please install [WSL2](https://learn.microsoft.com/en-us/windows/wsl/install) and run the command above.
-
-After installation:
+### One-Liner Install (with options)
 
 ```bash
-source ~/.bashrc    # reload shell (or: source ~/.zshrc)
-hermes              # start chatting!
+# Skip the interactive setup wizard (good for demos)
+curl -fsSL ... | bash -s -- --skip-setup
+
+# Install a specific branch
+curl -fsSL ... | bash -s -- --branch stable
+
+# Install to a custom directory
+curl -fsSL ... | bash -s -- --dir ~/hermes-custom
 ```
 
 ---
 
-## Getting Started
+## Your Workflow as Fork Owner
+
+### Daily / Weekly: Check for Upstream Updates
 
 ```bash
-hermes              # Interactive CLI — start a conversation
-hermes model        # Choose your LLM provider and model
-hermes tools        # Configure which tools are enabled
-hermes config set   # Set individual config values
-hermes gateway      # Start the messaging gateway (Telegram, Discord, etc.)
-hermes setup        # Run the full setup wizard (configures everything at once)
-hermes claw migrate # Migrate from OpenClaw (if coming from OpenClaw)
-hermes update       # Update to the latest version
-hermes doctor       # Diagnose any issues
+cd ~/hermes-rico                    # your local clone
+./scripts/check-upstream.sh         # see what's new
 ```
 
-📖 **[Full documentation →](https://hermes-agent.nousresearch.com/docs/)**
+This shows you:
+- How many commits upstream is ahead of your fork
+- A summary of what changed
+- Options to preview diffs, read detailed logs, or start a merge
 
-## CLI vs Messaging Quick Reference
-
-Hermes has two entry points: start the terminal UI with `hermes`, or run the gateway and talk to it from Telegram, Discord, Slack, WhatsApp, Signal, or Email. Once you're in a conversation, many slash commands are shared across both interfaces.
-
-| Action | CLI | Messaging platforms |
-|---------|-----|---------------------|
-| Start chatting | `hermes` | Run `hermes gateway setup` + `hermes gateway start`, then send the bot a message |
-| Start fresh conversation | `/new` or `/reset` | `/new` or `/reset` |
-| Change model | `/model [provider:model]` | `/model [provider:model]` |
-| Set a personality | `/personality [name]` | `/personality [name]` |
-| Retry or undo the last turn | `/retry`, `/undo` | `/retry`, `/undo` |
-| Compress context / check usage | `/compress`, `/usage`, `/insights [--days N]` | `/compress`, `/usage`, `/insights [days]` |
-| Browse skills | `/skills` or `/<skill-name>` | `/<skill-name>` |
-| Interrupt current work | `Ctrl+C` or send a new message | `/stop` or send a new message |
-| Platform-specific status | `/platforms` | `/status`, `/sethome` |
-
-For the full command lists, see the [CLI guide](https://hermes-agent.nousresearch.com/docs/user-guide/cli) and the [Messaging Gateway guide](https://hermes-agent.nousresearch.com/docs/user-guide/messaging).
-
----
-
-## Documentation
-
-All documentation lives at **[hermes-agent.nousresearch.com/docs](https://hermes-agent.nousresearch.com/docs/)**:
-
-| Section | What's Covered |
-|---------|---------------|
-| [Quickstart](https://hermes-agent.nousresearch.com/docs/getting-started/quickstart) | Install → setup → first conversation in 2 minutes |
-| [CLI Usage](https://hermes-agent.nousresearch.com/docs/user-guide/cli) | Commands, keybindings, personalities, sessions |
-| [Configuration](https://hermes-agent.nousresearch.com/docs/user-guide/configuration) | Config file, providers, models, all options |
-| [Messaging Gateway](https://hermes-agent.nousresearch.com/docs/user-guide/messaging) | Telegram, Discord, Slack, WhatsApp, Signal, Home Assistant |
-| [Security](https://hermes-agent.nousresearch.com/docs/user-guide/security) | Command approval, DM pairing, container isolation |
-| [Tools & Toolsets](https://hermes-agent.nousresearch.com/docs/user-guide/features/tools) | 40+ tools, toolset system, terminal backends |
-| [Skills System](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills) | Procedural memory, Skills Hub, creating skills |
-| [Memory](https://hermes-agent.nousresearch.com/docs/user-guide/features/memory) | Persistent memory, user profiles, best practices |
-| [MCP Integration](https://hermes-agent.nousresearch.com/docs/user-guide/features/mcp) | Connect any MCP server for extended capabilities |
-| [Cron Scheduling](https://hermes-agent.nousresearch.com/docs/user-guide/features/cron) | Scheduled tasks with platform delivery |
-| [Context Files](https://hermes-agent.nousresearch.com/docs/user-guide/features/context-files) | Project context that shapes every conversation |
-| [Architecture](https://hermes-agent.nousresearch.com/docs/developer-guide/architecture) | Project structure, agent loop, key classes |
-| [Contributing](https://hermes-agent.nousresearch.com/docs/developer-guide/contributing) | Development setup, PR process, code style |
-| [CLI Reference](https://hermes-agent.nousresearch.com/docs/reference/cli-commands) | All commands and flags |
-| [Environment Variables](https://hermes-agent.nousresearch.com/docs/reference/environment-variables) | Complete env var reference |
-
----
-
-## Migrating from OpenClaw
-
-If you're coming from OpenClaw, Hermes can automatically import your settings, memories, skills, and API keys.
-
-**During first-time setup:** The setup wizard (`hermes setup`) automatically detects `~/.openclaw` and offers to migrate before configuration begins.
-
-**Anytime after install:**
+### When You Find a Good Update: Merge & Push
 
 ```bash
-hermes claw migrate              # Interactive migration (full preset)
-hermes claw migrate --dry-run    # Preview what would be migrated
-hermes claw migrate --preset user-data   # Migrate without secrets
-hermes claw migrate --overwrite  # Overwrite existing conflicts
+# 1. Review what's new
+./scripts/check-upstream.sh --diff
+
+# 2. Start the interactive merge workflow
+./scripts/check-upstream.sh --merge
 ```
 
-What gets imported:
-- **SOUL.md** — persona file
-- **Memories** — MEMORY.md and USER.md entries
-- **Skills** — user-created skills → `~/.hermes/skills/openclaw-imports/`
-- **Command allowlist** — approval patterns
-- **Messaging settings** — platform configs, allowed users, working directory
-- **API keys** — allowlisted secrets (Telegram, OpenRouter, OpenAI, Anthropic, ElevenLabs)
-- **TTS assets** — workspace audio files
-- **Workspace instructions** — AGENTS.md (with `--workspace-target`)
+The merge workflow will:
+1. Show you the commits to be merged
+2. Ask for confirmation
+3. Merge upstream into your `main`
+4. Prompt you to test before pushing
+5. Push to `origin` (your fork) when you're ready
 
-See `hermes claw migrate --help` for all options, or use the `openclaw-migration` skill for an interactive agent-guided migration with dry-run previews.
-
----
-
-## Contributing
-
-We welcome contributions! See the [Contributing Guide](https://hermes-agent.nousresearch.com/docs/developer-guide/contributing) for development setup, code style, and PR process.
-
-Quick start for contributors — clone and go with `setup-hermes.sh`:
+### Manual Merge (if you prefer)
 
 ```bash
-git clone https://github.com/NousResearch/hermes-agent.git
-cd hermes-agent
-./setup-hermes.sh     # installs uv, creates venv, installs .[all], symlinks ~/.local/bin/hermes
-./hermes              # auto-detects the venv, no need to `source` first
+cd ~/hermes-rico
+git fetch upstream
+
+# See what's new
+git log --oneline main..upstream/main
+
+# Merge
+git checkout main
+git merge upstream/main --no-ff -m "Merge upstream: [description]"
+
+# Test locally
+source .venv/bin/activate
+python -m pytest tests/ -q
+
+# Push to your fork — this is what users receive
+git push origin main
 ```
 
-Manual path (equivalent to the above):
+### Cherry-Picking a Single Fix
+
+If upstream has one specific fix you want, without taking everything:
 
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-uv venv venv --python 3.11
-source venv/bin/activate
-uv pip install -e ".[all,dev]"
-scripts/run_tests.sh
+cd ~/hermes-rico
+git fetch upstream
+git checkout main
+git cherry-pick abc1234   # specific upstream commit hash
+git push origin main
 ```
 
-> **RL Training (optional):** The RL/Atropos integration (`environments/`) ships via the `atroposlib` and `tinker` dependencies pulled in by `.[all,dev]` — no submodule setup required.
+---
+
+## What Your Users Experience
+
+### Installation
+
+Your boss or team member runs the one-liner. It:
+
+1. Downloads the install script from **your fork**
+2. Clones **your fork** into `~/.hermes/hermes-agent`
+3. Installs dependencies, creates venv, links the `hermes` command
+4. Runs the setup wizard (unless `--skip-setup`)
+
+### Updating
+
+When you push an update to your fork, users get it by running:
+
+```bash
+hermes update
+```
+
+Or re-running the install script.
+
+Under the hood, `hermes update` does:
+
+```bash
+cd ~/.hermes/hermes-agent
+git fetch origin              # checks YOUR fork, not upstream
+git pull --ff-only origin main
+```
+
+**Your users never see upstream directly.** They only receive what you've pushed to your fork.
 
 ---
 
-## Community
+## Update Policy
 
-- 💬 [Discord](https://discord.gg/NousResearch)
-- 📚 [Skills Hub](https://agentskills.io)
-- 🐛 [Issues](https://github.com/NousResearch/hermes-agent/issues)
-- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Community WeChat bridge: Run Hermes Agent and OpenClaw on the same WeChat account.
+### What to Merge
+
+- Security patches
+- Bug fixes affecting features you use
+- Stable new features you've tested
+- Documentation improvements
+
+### What to Skip
+
+- Experimental or "beta" features
+- Large architectural refactors (unless you've tested thoroughly)
+- Updates that break your custom configurations
+- Commits with failing CI/tests upstream
+
+### Merge Commit Message Convention
+
+```
+Merge upstream: sync <short-hash> into fork
+
+- Security fix for tool execution sandbox
+- New feature: web search skill improvements
+- Tested locally: pytest passes, manual CLI check OK
+```
 
 ---
 
-## License
+## File Reference
 
-MIT — see [LICENSE](LICENSE).
+| File | Purpose |
+|------|---------|
+| `scripts/install.sh` | The one-liner install script your users run. Points to this fork. |
+| `scripts/check-upstream.sh` | Your personal tool to review upstream changes. |
+| `README.md` | This file. |
 
-Built by [Nous Research](https://nousresearch.com).
+---
+
+## Important Notes
+
+### Your Fork Must Stay Public (or users need SSH keys)
+
+The one-liner uses `git clone` over HTTPS. If you make this fork private, the install script will fail unless your users have SSH keys configured for GitHub.
+
+If you need a private fork:
+- Option A: Host an internal GitLab/Bitbucket mirror
+- Option B: Distribute the install script internally, pointing to a private repo with SSH
+- Option C: Build a tarball release and distribute that instead of `git clone`
+
+### Pinning Dependencies
+
+The upstream `pyproject.toml` or `requirements.txt` may have loose version constraints. If you want stricter stability:
+
+1. Generate a lockfile after a known-good install:
+   ```bash
+   cd ~/.hermes/hermes-agent
+   source .venv/bin/activate
+   pip freeze > requirements-lock.txt
+   ```
+
+2. Commit the lockfile to your fork
+
+3. Modify the install script to install from the lockfile instead of `[all]`
+
+### Testing Before Pushing
+
+Always test merged upstream changes before pushing to your fork:
+
+```bash
+cd ~/hermes-rico
+source .venv/bin/activate
+python -m pytest tests/ -q          # quick smoke test
+hermes --version                    # CLI loads
+hermes --tui                        # TUI loads (smoke test)
+```
+
+If tests fail, **do not push**. Fix or skip that upstream update.
+
+---
+
+## Quick Command Cheat Sheet
+
+| Task | Command |
+|------|---------|
+| Check upstream status | `./scripts/check-upstream.sh` |
+| Preview upstream diff | `./scripts/check-upstream.sh --diff` |
+| Detailed upstream log | `./scripts/check-upstream.sh --log` |
+| Interactive merge | `./scripts/check-upstream.sh --merge` |
+| Manual fetch upstream | `git fetch upstream` |
+| See upstream commits | `git log --oneline main..upstream/main` |
+| Merge upstream | `git merge upstream/main --no-ff` |
+| Cherry-pick one commit | `git cherry-pick <hash>` |
+| Push to your fork | `git push origin main` |
+| Check fork status | `git status && git log --oneline -3` |
+
+---
+
+## Contact
+
+**Rico (Fengzhuoyang) Zhu**  
+Email: `RicoZhu@ricozhu.com`  
+GitHub: [@Rico0319](https://github.com/Rico0319)
+
+---
+
+*Last updated: 2025-05-04*
