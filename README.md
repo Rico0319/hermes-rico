@@ -1,8 +1,8 @@
-# Rico's Hermes Fork — Curated Stable Mirror
+# Hermes for Living Style — Curated Stable Mirror
 
 **Fork of:** [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent)  
-**Owner:** Rico (Fengzhuoyang) Zhu — `RicoZhu@ricozhu.com`  
-**Purpose:** A stable, company-curated distribution of Hermes Agent for internal deployment.
+**Maintained by:** Rico (Fengzhuoyang) Zhu — `RicoZhu@ricozhu.com`  
+**Purpose:** A stable, company-curated distribution of Hermes Agent for Living Style's internal deployment.
 
 ---
 

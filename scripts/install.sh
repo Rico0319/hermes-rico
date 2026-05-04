@@ -1,12 +1,12 @@
 #!/bin/bash
 # ============================================================================
-# Hermes Agent Installer — Rico's Fork
+# Hermes Agent Installer — Living Style Edition
 # ============================================================================
 # Installation script for Linux, macOS, and Android/Termux.
 # Uses uv for desktop/server installs and Python's stdlib venv + pip on Termux.
 #
-# This installer pulls from Rico's fork of Hermes Agent instead of the
-# original NousResearch repository.
+# This installer pulls from the Living Style fork of Hermes Agent instead of
+# the original NousResearch repository.
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/install.sh | bash
@@ -28,7 +28,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 BOLD='\033[1m'
 
-# Configuration — Rico's fork
+# Configuration — Living Style fork
 REPO_URL_SSH="git@github.com:Rico0319/hermes-rico.git"
 REPO_URL_HTTPS="https://github.com/Rico0319/hermes-rico.git"
 HERMES_HOME="${HERMES_HOME:-$HOME/.hermes}"
@@ -90,7 +90,7 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         -h|--help)
-            echo "Hermes Agent Installer — Rico's Fork"
+            echo "Hermes Agent Installer — Living Style Edition"
             echo ""
             echo "Usage: install.sh [OPTIONS]"
             echo ""
@@ -113,7 +113,7 @@ while [[ $# -gt 0 ]]; do
             echo "  small and ensures the command is on PATH for all shells."
             echo "  Existing installs at \$HERMES_HOME/hermes-agent are preserved in-place."
             echo ""
-            echo "This installer pulls from Rico's fork:"
+            echo "This installer pulls from the Living Style fork:"
             echo "  https://github.com/Rico0319/hermes-rico"
             exit 0
             ;;
@@ -134,7 +134,7 @@ print_banner() {
     echo "┌─────────────────────────────────────────────────────────┐"
     echo "│             ⚕ Hermes Agent Installer                    │"
     echo "├─────────────────────────────────────────────────────────┤"
-    echo "│  Rico's Fork — Installing from github.com/Rico0319      │"
+    echo "│  Living Style — Installing from github.com/Rico0319      │"
     echo "│  hermes-rico                                            │"
     echo "└─────────────────────────────────────────────────────────┘"
     echo -e "${NC}"

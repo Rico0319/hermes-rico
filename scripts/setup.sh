@@ -1,22 +1,22 @@
 #!/bin/bash
 # ============================================================================
-# Rico's Hermes Setup — All-in-One Installer
+# Hermes for Living Style — All-in-One Setup
 # ============================================================================
-# Installs both Hermes Agent (from Rico's fork) and the Hermes WebUI in one go.
+# Installs both Hermes Agent and the Hermes WebUI in one go.
 #
 # Usage (one-liner):
 #   curl -fsSL https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/setup.sh | bash
 #
 # Usage (file):
 #   bash setup.sh
-#   bash setup.sh --skip-setup     # Skip the interactive hermes setup wizard
-#   bash setup.sh --webui-dir PATH # Use a custom WebUI install directory
+#   bash setup.sh --webui-dir PATH  # Use a custom WebUI install directory
 #
 # What this does:
 #   1. Checks if Hermes Agent is already installed
-#   2. If not, runs the Hermes Agent installer (interactive prompts work)
+#   2. If not, runs the Hermes Agent installer (auto-answers yes to packages)
 #   3. Clones (or updates) the Hermes WebUI
-#   4. Bootstraps the WebUI (venv, dependencies, start)
+#   4. Bootstraps the WebUI (venv, dependencies, launch)
+#   5. Creates a desktop shortcut for easy access
 # ============================================================================
 
 set -e
@@ -35,7 +35,6 @@ BOLD='\033[1m'
 AGENT_INSTALL_URL="https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/install.sh"
 WEBUI_REPO="https://github.com/Rico0319/hermes-webui-rico.git"
 WEBUI_DIR="${HOME}/hermes-webui"
-RUN_SETUP=true
 AGENT_INSTALL_DIR="${HERMES_INSTALL_DIR:-}"
 
 # ── Helpers ──────────────────────────────────────────────────────────────
@@ -48,10 +47,6 @@ log_step()  { echo -e "\n${MAGENTA}${BOLD}━━━ $1 ━━━${NC}\n"; }
 # ── Parse arguments ──────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --skip-setup)
-            RUN_SETUP=false
-            shift
-            ;;
         --webui-dir)
             WEBUI_DIR="$2"
             shift 2
@@ -62,15 +57,14 @@ while [[ $# -gt 0 ]]; do
             ;;
         -h|--help)
             echo ""
-            echo "Rico's Hermes Setup — All-in-One Installer"
+            echo "Hermes for Living Style — All-in-One Setup"
             echo ""
             echo "Usage: setup.sh [OPTIONS]"
             echo ""
             echo "Options:"
-            echo "  --skip-setup         Skip the interactive 'hermes setup' wizard at the end"
-            echo "  --webui-dir PATH     Install WebUI to a custom directory (default: ~/hermes-webui)"
-            echo "  --agent-dir PATH     Pass custom install dir to the Hermes Agent installer"
-            echo "  -h, --help           Show this help"
+            echo "  --webui-dir PATH    Install WebUI to a custom directory (default: ~/hermes-webui)"
+            echo "  --agent-dir PATH    Pass custom install dir to the Hermes Agent installer"
+            echo "  -h, --help          Show this help"
             echo ""
             echo "One-liner (installs everything):"
             echo "  curl -fsSL https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/setup.sh | bash"
@@ -83,6 +77,62 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+# ── OS detection ─────────────────────────────────────────────────────────
+OS="linux"
+case "$(uname -s)" in
+    Darwin*) OS="macos" ;;
+esac
+
+# ── Pre-install optional packages (so install.sh has nothing to ask) ─────
+install_optional_packages() {
+    log_info "Pre-installing optional system packages (ripgrep, ffmpeg)..."
+
+    # ── macOS ──
+    if [ "$OS" = "macos" ]; then
+        if command -v brew &>/dev/null; then
+            brew install ripgrep ffmpeg 2>/dev/null && log_ok "ripgrep + ffmpeg installed via Homebrew"
+        else
+            log_warn "Homebrew not found — skipping optional packages"
+        fi
+        return
+    fi
+
+    # ── Linux: try passwordless sudo first, then passwordless, then skip ──
+    local install_cmd=""
+    local pkgs=""
+
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        case "$ID" in
+            ubuntu|debian)
+                pkgs="ripgrep ffmpeg"
+                ;;
+            fedora)
+                pkgs="ripgrep ffmpeg-free"
+                ;;
+            arch)
+                pkgs="ripgrep ffmpeg"
+                ;;
+        esac
+    fi
+
+    if [ -z "$pkgs" ]; then
+        log_warn "Could not detect Linux distro — skipping optional packages"
+        return
+    fi
+
+    # Try passwordless sudo
+    if command -v sudo &>/dev/null && sudo -n true 2>/dev/null; then
+        case "$ID" in
+            ubuntu|debian) sudo DEBIAN_FRONTEND=noninteractive apt install -y $pkgs 2>/dev/null && log_ok "Packages installed ($pkgs)" || log_warn "Could not install packages" ;;
+            fedora)        sudo dnf install -y $pkgs 2>/dev/null && log_ok "Packages installed ($pkgs)" || log_warn "Could not install packages" ;;
+            arch)          sudo pacman -S --noconfirm $pkgs 2>/dev/null && log_ok "Packages installed ($pkgs)" || log_warn "Could not install packages" ;;
+        esac
+    else
+        log_info "No passwordless sudo — packages will be skipped during Hermes install"
+    fi
+}
 
 # ── Check if agent is already installed ──────────────────────────────────
 agent_already_installed() {
@@ -102,18 +152,69 @@ agent_already_installed() {
     return 1
 }
 
+# ── Desktop shortcut ─────────────────────────────────────────────────────
+create_desktop_shortcut() {
+    local desktop_dir="${HOME}/Desktop"
+    local start_script="${WEBUI_DIR}/start.sh"
+
+    # If no Desktop dir (headless systems), try common alternatives
+    if [ ! -d "$desktop_dir" ]; then
+        # Try XDG desktop directory
+        if command -v xdg-user-dir &>/dev/null; then
+            desktop_dir="$(xdg-user-dir DESKTOP 2>/dev/null || echo '')"
+        fi
+        if [ -z "$desktop_dir" ] || [ ! -d "$desktop_dir" ]; then
+            log_warn "No Desktop directory found — skipping shortcut"
+            return
+        fi
+    fi
+
+    if [ "$OS" = "macos" ]; then
+        # macOS: create a double-clickable .command file
+        local shortcut="${desktop_dir}/Hermes WebUI.command"
+        cat > "$shortcut" << EOF
+#!/bin/bash
+cd "${WEBUI_DIR}"
+python3 bootstrap.py
+EOF
+        chmod +x "$shortcut"
+        log_ok "Desktop shortcut created: ${desktop_dir}/Hermes WebUI.command"
+
+    else
+        # Linux: create a .desktop file
+        local shortcut="${desktop_dir}/hermes-webui.desktop"
+        cat > "$shortcut" << EOF
+[Desktop Entry]
+Type=Application
+Name=Hermes WebUI
+Comment=Launch Hermes AI Web Interface for Living Style
+Exec=bash -c 'cd "${WEBUI_DIR}" && python3 bootstrap.py'
+Icon=utilities-terminal
+Terminal=true
+Categories=Utility;
+EOF
+        chmod +x "$shortcut"
+        log_ok "Desktop shortcut created: ${desktop_dir}/hermes-webui.desktop"
+    fi
+}
+
 # ── Banner ───────────────────────────────────────────────────────────────
 echo ""
 echo -e "${MAGENTA}${BOLD}"
 echo "┌──────────────────────────────────────────────────────────┐"
-echo "│        ⚕ Rico's Hermes — All-in-One Setup                │"
+echo "│        ⚕  Hermes for Living Style — Setup                │"
 echo "├──────────────────────────────────────────────────────────┤"
 echo "│  Hermes Agent  → github.com/Rico0319/hermes-rico          │"
 echo "│  Hermes WebUI  → github.com/Rico0319/hermes-webui-rico    │"
 echo "└──────────────────────────────────────────────────────────┘"
 echo -e "${NC}"
 
-# ── Step 1: Install Hermes Agent ────────────────────────────────────────
+# ── Step 1: Pre-install optional packages ────────────────────────────────
+# Run this BEFORE the agent installer so there are no interactive prompts
+# about ripgrep/ffmpeg during the Hermes install.
+install_optional_packages
+
+# ── Step 2: Install Hermes Agent ────────────────────────────────────────
 log_step "Step 1/2: Hermes Agent"
 
 if agent_already_installed; then
@@ -124,15 +225,13 @@ if agent_already_installed; then
 else
     log_info "Hermes Agent not found. Installing..."
     echo ""
-    log_info "The Hermes installer will now run. It may ask you questions"
-    log_info "about installing optional system packages (ripgrep, ffmpeg)."
-    log_info "You can safely accept the defaults."
+    log_info "Installing Hermes Agent (this may take a few minutes)..."
     echo ""
 
-    # Download the installer to a temp file so bash can run it properly.
-    # This is important: when this script is piped from curl, the inner
-    # bash process inherits the pipe as stdin, but the Hermes install.sh
-    # reads interactive prompts from /dev/tty — so prompts still work.
+    # Download the installer to a temp file.
+    # We pass --skip-setup so the interactive 'hermes setup' wizard
+    # (which asks about launching the CLI) is skipped entirely —
+    # we go straight to WebUI setup instead.
     TMP_INSTALL=$(mktemp /tmp/hermes-install.XXXXXX.sh)
     trap "rm -f '$TMP_INSTALL'" EXIT
 
@@ -143,19 +242,26 @@ else
     fi
 
     log_info "Running Hermes Agent installer..."
-    # Build installer args
-    INSTALL_ARGS=()
-    [ "$RUN_SETUP" = false ] && INSTALL_ARGS+=("--skip-setup")
+
+    INSTALL_ARGS=("--skip-setup")
     [ -n "$AGENT_INSTALL_DIR" ] && INSTALL_ARGS+=("--dir" "$AGENT_INSTALL_DIR")
 
-    if ! bash "$TMP_INSTALL" "${INSTALL_ARGS[@]}"; then
-        log_err "Hermes Agent installation failed."
-        log_info "You can try installing manually:"
-        log_info "  curl -fsSL $AGENT_INSTALL_URL | bash"
-        exit 1
+    # Automatically answer "yes" to any remaining prompts (e.g. sudo password
+    # requests) by piping 'y' to the installer. Since we pre-installed
+    # ripgrep/ffmpeg above, the main "install optional packages?" prompt
+    # won't appear — but this fallback ensures no stalls.
+    if yes | bash "$TMP_INSTALL" "${INSTALL_ARGS[@]}" 2>/dev/null; then
+        log_ok "Hermes Agent installed successfully"
+    else
+        # If yes-pipe fails (e.g. on a sudo password prompt), retry without pipe
+        log_warn "Auto-answer install failed — retrying interactively..."
+        if ! bash "$TMP_INSTALL" "${INSTALL_ARGS[@]}"; then
+            log_err "Hermes Agent installation failed."
+            log_info "You can try installing manually:"
+            log_info "  curl -fsSL $AGENT_INSTALL_URL | bash"
+            exit 1
+        fi
     fi
-
-    log_ok "Hermes Agent installed successfully"
 
     # Ensure ~/.local/bin is on PATH for this session
     if [ -d "$HOME/.local/bin" ]; then
@@ -163,7 +269,7 @@ else
     fi
 fi
 
-# ── Step 2: Install WebUI ──────────────────────────────────────────────
+# ── Step 3: Install WebUI ──────────────────────────────────────────────
 log_step "Step 2/2: Hermes WebUI"
 
 if [ -d "$WEBUI_DIR/.git" ]; then
@@ -203,14 +309,16 @@ if ! python3 bootstrap.py; then
     exit 1
 fi
 
+# ── Step 4: Create desktop shortcut ──────────────────────────────────────
+create_desktop_shortcut
+
 # ── Done ────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${GREEN}${BOLD}┌──────────────────────────────────────────────────────────┐"
-echo "│          ✓  Hermes setup complete!                       │"
+echo "│          ✓  Hermes for Living Style — Setup complete!     │"
 echo "└──────────────────────────────────────────────────────────┘${NC}"
 echo ""
 
-# Check if hermes setup wizard was skipped (happens in pipe mode)
 if command -v hermes &>/dev/null; then
     echo -e "  ${BOLD}Hermes Agent:${NC}  installed ($(hermes --version 2>/dev/null || echo 'ok'))"
 else
@@ -219,20 +327,11 @@ fi
 
 echo -e "  ${BOLD}WebUI:${NC}         installed at ${WEBUI_DIR}"
 echo ""
-echo -e "${BOLD}Quick start:${NC}"
-echo "  cd ${WEBUI_DIR}"
-echo "  python3 bootstrap.py"
-echo ""
 
-if [ "$RUN_SETUP" = true ]; then
-    # Detect if we're in a pipe (setup wizard may have been skipped)
-    if [ ! -t 0 ]; then
-        echo -e "${YELLOW}Note:${NC} Running in pipe mode — the interactive setup wizard"
-        echo "may have been skipped. Run this to configure your agent:"
-        echo "  hermes setup"
-        echo ""
-    fi
-fi
+echo -e "${BOLD}Quick start:${NC}"
+echo "  Desktop:  Double-click the shortcut on your Desktop"
+echo "  Terminal: cd ${WEBUI_DIR} && python3 bootstrap.py"
+echo ""
 
 echo -e "${CYAN}Need help?${NC} https://github.com/Rico0319/hermes-rico"
 echo ""
