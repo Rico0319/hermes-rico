@@ -1,12 +1,15 @@
 #!/bin/bash
 # ============================================================================
-# Hermes Agent Installer
+# Hermes Agent Installer — Rico's Fork
 # ============================================================================
 # Installation script for Linux, macOS, and Android/Termux.
 # Uses uv for desktop/server installs and Python's stdlib venv + pip on Termux.
 #
+# This installer pulls from Rico's fork of Hermes Agent instead of the
+# original NousResearch repository.
+#
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/install.sh | bash
 #
 # Or with options:
 #   curl -fsSL ... | bash -s -- --no-venv --skip-setup
@@ -25,9 +28,9 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 BOLD='\033[1m'
 
-# Configuration
-REPO_URL_SSH="git@github.com:NousResearch/hermes-agent.git"
-REPO_URL_HTTPS="https://github.com/NousResearch/hermes-agent.git"
+# Configuration — Rico's fork
+REPO_URL_SSH="git@github.com:Rico0319/hermes-rico.git"
+REPO_URL_HTTPS="https://github.com/Rico0319/hermes-rico.git"
 HERMES_HOME="${HERMES_HOME:-$HOME/.hermes}"
 # INSTALL_DIR is resolved AFTER arg parsing and OS detection so we can pick an
 # FHS-style layout for root installs.  Track whether the user gave us an
@@ -87,7 +90,7 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         -h|--help)
-            echo "Hermes Agent Installer"
+            echo "Hermes Agent Installer — Rico's Fork"
             echo ""
             echo "Usage: install.sh [OPTIONS]"
             echo ""
@@ -109,6 +112,9 @@ while [[ $# -gt 0 ]]; do
             echo "  (default /root/.hermes).  This keeps Docker bind-mounted volumes"
             echo "  small and ensures the command is on PATH for all shells."
             echo "  Existing installs at \$HERMES_HOME/hermes-agent are preserved in-place."
+            echo ""
+            echo "This installer pulls from Rico's fork:"
+            echo "  https://github.com/Rico0319/hermes-rico"
             exit 0
             ;;
         *)
@@ -128,7 +134,8 @@ print_banner() {
     echo "┌─────────────────────────────────────────────────────────┐"
     echo "│             ⚕ Hermes Agent Installer                    │"
     echo "├─────────────────────────────────────────────────────────┤"
-    echo "│  An open source AI agent by Nous Research.              │"
+    echo "│  Rico's Fork — Installing from github.com/Rico0319      │"
+    echo "│  hermes-rico                                            │"
     echo "└─────────────────────────────────────────────────────────┘"
     echo -e "${NC}"
 }
@@ -297,7 +304,7 @@ detect_os() {
             OS="windows"
             DISTRO="windows"
             log_error "Windows detected. Please use the PowerShell installer:"
-            log_info "  irm https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.ps1 | iex"
+            log_info "  irm https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/install.ps1 | iex"
             exit 1
             ;;
         *)
