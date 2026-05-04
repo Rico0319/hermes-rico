@@ -25,14 +25,47 @@ This repository is a **curated, stable buffer** between the fast-moving upstream
 | `origin` | `git@github.com:Rico0319/hermes-rico.git` | Your fork — what users install from |
 | `upstream` | `https://github.com/NousResearch/hermes-agent.git` | Original repo — you review from here |
 
-### One-Liner Install (for your users)
+## User Installation
+
+### Preferred: All-in-One Setup (Agent + WebUI)
+
+This installs both the Hermes Agent and the WebUI in one command:
+
+**One-liner:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/setup.sh | bash
+```
+
+**Or download and run:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/setup.sh -o setup.sh
+bash setup.sh
+```
+
+**Options:**
+```bash
+# Skip the interactive hermes setup wizard (the agent installs, you configure later)
+curl -fsSL ... | bash -s -- --skip-setup
+
+# Custom WebUI install directory
+bash setup.sh --webui-dir ~/my-hermes-webui
+```
+
+The setup script:
+1. Checks if Hermes Agent is already installed
+2. Installs it if needed (with interactive prompts for optional packages)
+3. Clones or updates the Hermes WebUI
+4. Bootstraps the WebUI (venv, dependencies, launch)
+
+### Manual: Agent-Only Install
+
+If you only want the agent without the WebUI:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/install.sh | bash
 ```
 
-### One-Liner Install (with options)
-
+**With options:**
 ```bash
 # Skip the interactive setup wizard (good for demos)
 curl -fsSL ... | bash -s -- --skip-setup
@@ -116,12 +149,18 @@ git push origin main
 
 ### Installation
 
-Your boss or team member runs the one-liner. It:
+Your boss or team member runs the all-in-one setup one-liner. It:
 
-1. Downloads the install script from **your fork**
-2. Clones **your fork** into `~/.hermes/hermes-agent`
-3. Installs dependencies, creates venv, links the `hermes` command
-4. Runs the setup wizard (unless `--skip-setup`)
+1. Downloads the setup script from **your fork**
+2. Installs Hermes Agent from **your fork** (with interactive prompts for optional packages)
+3. Clones or updates **your WebUI fork**
+4. Bootstraps the WebUI (venv, dependencies, launch)
+5. Opens the browser to the WebUI
+
+Full breakdown:
+- Hermes Agent installed to `~/.hermes/hermes-agent`
+- Hermes command linked to `~/.local/bin/hermes`
+- WebUI cloned to `~/hermes-webui`
 
 ### Updating
 
@@ -177,7 +216,8 @@ Merge upstream: sync <short-hash> into fork
 
 | File | Purpose |
 |------|---------|
-| `scripts/install.sh` | The one-liner install script your users run. Points to this fork. |
+| `scripts/setup.sh` | **Preferred installer.** Downloads & runs both Agent and WebUI setup in one go. |
+| `scripts/install.sh` | One-liner for Hermes Agent only (no WebUI). |
 | `scripts/check-upstream.sh` | Your personal tool to review upstream changes. |
 | `README.md` | This file. |
 
@@ -229,6 +269,8 @@ If tests fail, **do not push**. Fix or skip that upstream update.
 
 | Task | Command |
 |------|---------|
+| **Install (all-in-one)** | `curl -fsSL https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/setup.sh \| bash` |
+| **Install (agent only)** | `curl -fsSL https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/install.sh \| bash` |
 | Check upstream status | `./scripts/check-upstream.sh` |
 | Preview upstream diff | `./scripts/check-upstream.sh --diff` |
 | Detailed upstream log | `./scripts/check-upstream.sh --log` |
