@@ -22,13 +22,19 @@
 
 set -e
 
-# When this script is piped from curl, stdin is the HTTP body.
-# Homebrew (and some other tools) may read from stdin, consuming script
-# bytes and causing the bash parser to fail silently. Rewire stdin to
-# the controlling terminal so the script is insulated from the pipe.
-if [ -t 0 ] || [ -c /dev/tty ]; then
-    exec 0</dev/tty 2>/dev/null || true
-fi
+# NOTE on curl | bash:
+# Homebrew's installer reads from stdin during 'brew install' even when
+# it ultimately uses /dev/tty for interactive prompts. When the script
+# itself is being piped from curl, this can cause the bash parser to
+# receive corrupted input and silently exit.
+#
+# RECOMMENDED (always works):
+#   curl -fsSL -o /tmp/setup.sh https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/setup.sh && bash /tmp/setup.sh
+#
+# One-liner (should work on most systems, but macOS + Homebrew is fragile):
+#   curl -fsSL https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/setup.sh | bash
+#
+# If the one-liner hangs or exits silently, use the recommended pattern above.
 
 # ── Colors ───────────────────────────────────────────────────────────────
 RED='\033[0;31m'
