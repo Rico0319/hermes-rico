@@ -4,7 +4,10 @@
 # ============================================================================
 # Installs both Hermes Agent and the Hermes WebUI in one go.
 #
-# Usage (one-liner):
+# Usage (recommended — download first, then run):
+#   curl -fsSL -o /tmp/setup.sh https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/setup.sh && bash /tmp/setup.sh
+#
+# Usage (one-liner — works, but less reliable on macOS with Homebrew):
 #   curl -fsSL https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/setup.sh | bash
 #   curl -fsSL ... | bash -s -- --skip-ffmpeg    # Skip ffmpeg (faster install)
 #   curl -fsSL ... | bash -s -- --debug        # Verbose trace mode
@@ -18,6 +21,14 @@
 # ============================================================================
 
 set -e
+
+# When this script is piped from curl, stdin is the HTTP body.
+# Homebrew (and some other tools) may read from stdin, consuming script
+# bytes and causing the bash parser to fail silently. Rewire stdin to
+# the controlling terminal so the script is insulated from the pipe.
+if [ -t 0 ] || [ -c /dev/tty ]; then
+    exec 0</dev/tty 2>/dev/null || true
+fi
 
 # ── Colors ───────────────────────────────────────────────────────────────
 RED='\033[0;31m'
@@ -69,7 +80,10 @@ while [[ $# -gt 0 ]]; do
             echo "  --debug             Enable bash trace mode for troubleshooting"
             echo "  -h, --help          Show this help"
             echo ""
-            echo "One-liner (installs everything):"
+            echo "Recommended (avoids macOS Homebrew stdin issues):"
+            echo "  curl -fsSL -o /tmp/setup.sh https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/setup.sh && bash /tmp/setup.sh"
+            echo ""
+            echo "One-liner (usually fine on Linux):"
             echo "  curl -fsSL https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/setup.sh | bash"
             echo ""
             exit 0
