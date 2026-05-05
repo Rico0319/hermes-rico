@@ -6,10 +6,8 @@
 #
 # Usage (one-liner):
 #   curl -fsSL https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/setup.sh | bash
-#
-# Usage (file):
-#   bash setup.sh
-#   bash setup.sh --webui-dir PATH  # Use a custom WebUI install directory
+#   curl -fsSL ... | bash -s -- --skip-ffmpeg    # Skip ffmpeg (faster install)
+#   curl -fsSL ... | bash -s -- --debug        # Verbose trace mode
 #
 # What this does:
 #   1. Checks if Hermes Agent is already installed
@@ -55,6 +53,10 @@ while [[ $# -gt 0 ]]; do
             AGENT_INSTALL_DIR="$2"
             shift 2
             ;;
+        --debug)
+            set -x
+            shift
+            ;;
         -h|--help)
             echo ""
             echo "Hermes for Living Style — All-in-One Setup"
@@ -64,6 +66,7 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --webui-dir PATH    Install WebUI to a custom directory (default: ~/hermes-webui)"
             echo "  --agent-dir PATH    Pass custom install dir to the Hermes Agent installer"
+            echo "  --debug             Enable bash trace mode for troubleshooting"
             echo "  -h, --help          Show this help"
             echo ""
             echo "One-liner (installs everything):"
@@ -149,47 +152,26 @@ ensure_homebrew() {
 
 # ── Pre-install optional packages (so install.sh has nothing to ask) ─────
 install_optional_packages() {
-    log_info "Pre-installing optional system packages (ripgrep, ffmpeg)..."
+    log_info "Pre-installing ripgrep (fast file search)..."
 
     # ── macOS ──
     if [ "$OS" = "macos" ]; then
-        brew install ripgrep ffmpeg 2>/dev/null && log_ok "ripgrep + ffmpeg installed via Homebrew"
+        brew install ripgrep 2>/dev/null && log_ok "ripgrep installed via Homebrew"
         return
     fi
 
-    # ── Linux: try passwordless sudo first, then passwordless, then skip ──
-    local install_cmd=""
-    local pkgs=""
-
-    if [ -f /etc/os-release ]; then
-        . /etc/os-release
-        case "$ID" in
-            ubuntu|debian)
-                pkgs="ripgrep ffmpeg"
-                ;;
-            fedora)
-                pkgs="ripgrep ffmpeg-free"
-                ;;
-            arch)
-                pkgs="ripgrep ffmpeg"
-                ;;
-        esac
-    fi
-
-    if [ -z "$pkgs" ]; then
-        log_warn "Could not detect Linux distro — skipping optional packages"
-        return
-    fi
-
-    # Try passwordless sudo
+    # ── Linux: try passwordless sudo first, then skip ──
     if command -v sudo &>/dev/null && sudo -n true 2>/dev/null; then
-        case "$ID" in
-            ubuntu|debian) sudo DEBIAN_FRONTEND=noninteractive apt install -y $pkgs 2>/dev/null && log_ok "Packages installed ($pkgs)" || log_warn "Could not install packages" ;;
-            fedora)        sudo dnf install -y $pkgs 2>/dev/null && log_ok "Packages installed ($pkgs)" || log_warn "Could not install packages" ;;
-            arch)          sudo pacman -S --noconfirm $pkgs 2>/dev/null && log_ok "Packages installed ($pkgs)" || log_warn "Could not install packages" ;;
-        esac
+        if [ -f /etc/os-release ]; then
+            . /etc/os-release
+            case "$ID" in
+                ubuntu|debian) sudo DEBIAN_FRONTEND=noninteractive apt install -y ripgrep 2>/dev/null && log_ok "ripgrep installed" || log_warn "Could not install ripgrep" ;;
+                fedora)        sudo dnf install -y ripgrep 2>/dev/null && log_ok "ripgrep installed" || log_warn "Could not install ripgrep" ;;
+                arch)          sudo pacman -S --noconfirm ripgrep 2>/dev/null && log_ok "ripgrep installed" || log_warn "Could not install ripgrep" ;;
+            esac
+        fi
     else
-        log_info "No passwordless sudo — packages will be skipped during Hermes install"
+        log_info "No passwordless sudo — ripgrep will be skipped (optional)"
     fi
 }
 
@@ -299,32 +281,30 @@ else
     TMP_INSTALL=$(mktemp /tmp/hermes-install.XXXXXX.sh)
     trap "rm -f '$TMP_INSTALL'" EXIT
 
+    log_info "Downloading Hermes Agent installer..."
     if ! curl -fsSL "$AGENT_INSTALL_URL" -o "$TMP_INSTALL"; then
         log_err "Failed to download Hermes installer from:"
         log_err "  $AGENT_INSTALL_URL"
         exit 1
     fi
+    log_ok "Installer downloaded"
 
-    log_info "Running Hermes Agent installer..."
+    log_info "Running Hermes Agent installer (this may take a few minutes)..."
 
     INSTALL_ARGS=("--skip-setup")
     [ -n "$AGENT_INSTALL_DIR" ] && INSTALL_ARGS+=("--dir" "$AGENT_INSTALL_DIR")
 
-    # Automatically answer "yes" to any remaining prompts (e.g. sudo password
-    # requests) by piping 'y' to the installer. Since we pre-installed
-    # ripgrep/ffmpeg above, the main "install optional packages?" prompt
-    # won't appear — but this fallback ensures no stalls.
-    if yes | bash "$TMP_INSTALL" "${INSTALL_ARGS[@]}" 2>/dev/null; then
+    # install.sh already detects non-interactive mode (stdin is not a tty)
+    # and skips all prompts automatically. No need for 'yes |' pipe.
+    if bash "$TMP_INSTALL" "${INSTALL_ARGS[@]}"; then
         log_ok "Hermes Agent installed successfully"
     else
-        # If yes-pipe fails (e.g. on a sudo password prompt), retry without pipe
-        log_warn "Auto-answer install failed — retrying interactively..."
-        if ! bash "$TMP_INSTALL" "${INSTALL_ARGS[@]}"; then
-            log_err "Hermes Agent installation failed."
-            log_info "You can try installing manually:"
-            log_info "  curl -fsSL $AGENT_INSTALL_URL | bash"
-            exit 1
-        fi
+        log_err "Hermes Agent installation failed."
+        log_info "You can try installing manually:"
+        log_info "  curl -fsSL $AGENT_INSTALL_URL | bash"
+        log_info "Or with debug output:"
+        log_info "  curl -fsSL $AGENT_INSTALL_URL | bash -s -- --debug"
+        exit 1
     fi
 
     # Ensure ~/.local/bin is on PATH for this session
