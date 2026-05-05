@@ -29,38 +29,51 @@ This repository is a **curated, stable buffer** between the fast-moving upstream
 
 ### Preferred: All-in-One Setup (Agent + WebUI)
 
-This installs both the Hermes Agent and the WebUI in one command:
+This installs both the Hermes Agent and the WebUI in one go.
 
-**One-liner:**
+**Recommended — download first, then run (works everywhere, especially macOS):**
+```bash
+curl -fsSL -o /tmp/setup.sh https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/setup.sh && bash /tmp/setup.sh
+```
+
+**One-liner (works on most Linux; macOS + Homebrew may cause stdin issues):**
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/setup.sh | bash
 ```
 
-**Or download and run:**
-```bash
-curl -fsSL https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/setup.sh -o setup.sh
-bash setup.sh
-```
+> **macOS note:** Homebrew reads from stdin during `brew install`. When the script
+> is piped from `curl`, this can corrupt the bash parser and cause silent exits.
+> The download-first pattern above avoids this entirely.
 
 **Options:**
 ```bash
 # Skip the interactive hermes setup wizard (the agent installs, you configure later)
-curl -fsSL ... | bash -s -- --skip-setup
+bash /tmp/setup.sh --skip-setup
 
 # Custom WebUI install directory
-bash setup.sh --webui-dir ~/my-hermes-webui
+bash /tmp/setup.sh --webui-dir ~/my-hermes-webui
+
+# Enable bash trace mode for troubleshooting
+bash /tmp/setup.sh --debug
 ```
 
 The setup script:
 1. Checks if Hermes Agent is already installed
-2. Installs it if needed (with interactive prompts for optional packages)
+2. Installs it if needed (uses Homebrew on macOS for ripgrep; uv and Node auto-installed)
 3. Clones or updates the Hermes WebUI
 4. Bootstraps the WebUI (venv, dependencies, launch)
+5. Creates a desktop shortcut for easy relaunch
 
 ### Manual: Agent-Only Install
 
 If you only want the agent without the WebUI:
 
+**Recommended:**
+```bash
+curl -fsSL -o /tmp/install.sh https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/install.sh && bash /tmp/install.sh
+```
+
+**One-liner:**
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/install.sh | bash
 ```
@@ -68,13 +81,13 @@ curl -fsSL https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/i
 **With options:**
 ```bash
 # Skip the interactive setup wizard (good for demos)
-curl -fsSL ... | bash -s -- --skip-setup
+bash /tmp/install.sh --skip-setup
 
 # Install a specific branch
-curl -fsSL ... | bash -s -- --branch stable
+bash /tmp/install.sh --branch stable
 
 # Install to a custom directory
-curl -fsSL ... | bash -s -- --dir ~/hermes-custom
+bash /tmp/install.sh --dir ~/hermes-custom
 ```
 
 ---
