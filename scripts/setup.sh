@@ -84,17 +84,76 @@ case "$(uname -s)" in
     Darwin*) OS="macos" ;;
 esac
 
+# ── Homebrew check (macOS only) ───────────────────────────────────────────
+# Homebrew is required on macOS for installing ripgrep, ffmpeg, and other
+# optional dependencies. We auto-install it so non-technical users don't
+# get stuck. The only interaction needed is a possible macOS password prompt.
+ensure_homebrew() {
+    if [ "$OS" != "macos" ]; then
+        return 0
+    fi
+
+    # Already installed? Nothing to do.
+    if command -v brew &>/dev/null; then
+        log_ok "Homebrew already installed ($(brew --version | head -1))"
+        return 0
+    fi
+
+    log_step "Installing Homebrew (macOS package manager)"
+    log_info "Homebrew is required for installing system dependencies."
+    log_info "You may be asked to type your macOS password once."
+
+    # The official Homebrew install script runs non-interactively when piped to bash.
+    # It may prompt for sudo password via the terminal — that's expected and fine.
+    # It also installs Xcode Command Line Tools if missing (may show a GUI popup).
+    local brew_result
+    brew_result=0
+
+    if /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" </dev/tty; then
+        brew_result=0
+    else
+        brew_result=1
+    fi
+
+    if [ "$brew_result" -ne 0 ]; then
+        echo ""
+        log_err "Homebrew installation failed."
+        log_err "This script requires Homebrew to install necessary components."
+        log_err ""
+        log_err "You can install Homebrew manually:"
+        log_err "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+        log_err "Then re-run this setup script."
+        echo ""
+        exit 1
+    fi
+
+    # On Apple Silicon Macs, Homebrew installs to /opt/homebrew.
+    # On Intel Macs, it installs to /usr/local.
+    # We need to add it to PATH for this script session.
+    for brew_path in "/opt/homebrew/bin" "/usr/local/bin"; do
+        if [ -x "$brew_path/brew" ]; then
+            export PATH="$brew_path:$PATH"
+            log_ok "Homebrew installed successfully at $brew_path"
+            break
+        fi
+    done
+
+    if ! command -v brew &>/dev/null; then
+        log_err "Homebrew was installed but the 'brew' command is not on PATH."
+        log_err "This is unexpected. Please open a new terminal and re-run this script."
+        exit 1
+    fi
+
+    log_ok "Homebrew is ready ($(brew --version | head -1))"
+}
+
 # ── Pre-install optional packages (so install.sh has nothing to ask) ─────
 install_optional_packages() {
     log_info "Pre-installing optional system packages (ripgrep, ffmpeg)..."
 
     # ── macOS ──
     if [ "$OS" = "macos" ]; then
-        if command -v brew &>/dev/null; then
-            brew install ripgrep ffmpeg 2>/dev/null && log_ok "ripgrep + ffmpeg installed via Homebrew"
-        else
-            log_warn "Homebrew not found — skipping optional packages"
-        fi
+        brew install ripgrep ffmpeg 2>/dev/null && log_ok "ripgrep + ffmpeg installed via Homebrew"
         return
     fi
 
@@ -208,6 +267,11 @@ echo "│  Hermes Agent  → github.com/Rico0319/hermes-rico          │"
 echo "│  Hermes WebUI  → github.com/Rico0319/hermes-webui-rico    │"
 echo "└──────────────────────────────────────────────────────────┘"
 echo -e "${NC}"
+
+# ── Step 0 (macOS only): Ensure Homebrew is installed ────────────────────
+# This must run BEFORE any package installations so ripgrep/ffmpeg
+# can be installed via Homebrew without asking the user any questions.
+ensure_homebrew
 
 # ── Step 1: Pre-install optional packages ────────────────────────────────
 # Run this BEFORE the agent installer so there are no interactive prompts
