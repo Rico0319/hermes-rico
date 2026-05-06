@@ -31,19 +31,14 @@ This repository is a **curated, stable buffer** between the fast-moving upstream
 
 This installs both the Hermes Agent and the WebUI in one go.
 
-**Recommended — download first, then run (works everywhere, especially macOS):**
 ```bash
-curl -fsSL -o /tmp/setup.sh https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/setup.sh && bash /tmp/setup.sh
+curl -fsSL -o /tmp/setup.sh https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/setup.sh \
+  && bash /tmp/setup.sh
 ```
 
-**One-liner (works on most Linux; macOS + Homebrew may cause stdin issues):**
-```bash
-curl -fsSL https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/setup.sh | bash
-```
-
-> **macOS note:** Homebrew reads from stdin during `brew install`. When the script
+> **macOS note:** Homebrew reads from stdin during `brew install`. When a script
 > is piped from `curl`, this can corrupt the bash parser and cause silent exits.
-> The download-first pattern above avoids this entirely.
+> Always download first, then execute.
 
 **Options:**
 ```bash
@@ -68,14 +63,9 @@ The setup script:
 
 If you only want the agent without the WebUI:
 
-**Recommended:**
 ```bash
-curl -fsSL -o /tmp/install.sh https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/install.sh && bash /tmp/install.sh
-```
-
-**One-liner:**
-```bash
-curl -fsSL https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/install.sh | bash
+curl -fsSL -o /tmp/install.sh https://raw.githubusercontent.com/Rico0319/hermes-rico/main/scripts/install.sh \
+  && bash /tmp/install.sh
 ```
 
 **With options:**
